@@ -1032,7 +1032,7 @@ const POLISH_RULES = [
  * ============================================================ */
 
 const $  = (s) => document.querySelector(s);
-const $ = (s) => document.querySelectorAll(s);
+const $$ = (s) => document.querySelectorAll(s);
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 /* ---------------- 本地存储 ---------------- */
@@ -1710,10 +1710,12 @@ function renderReport() {
 
 function drawTrend() {
   const cv = $('#trendChart');
+  if (!cv) return;
+  const g = cv.getContext && cv.getContext('2d');
+  if (!g) return; // 极少数环境拿不到 2d 上下文，静默降级，不能让整个页面崩掉
   const dpr = window.devicePixelRatio || 1;
   const w = cv.clientWidth || 800, h = 220;
   cv.width = w * dpr; cv.height = h * dpr;
-  const g = cv.getContext('2d');
   g.scale(dpr, dpr);
   g.clearRect(0, 0, w, h);
 
@@ -1904,11 +1906,11 @@ function init() {
   }
 
   // Tab 切换
-  $('.tab').forEach(b => {
+  $$('.tab').forEach(b => {
     b.onclick = () => {
-      $('.tab').forEach(x => x.classList.remove('active'));
+      $$('.tab').forEach(x => x.classList.remove('active'));
       b.classList.add('active');
-      $('.view').forEach(v => v.classList.remove('active'));
+      $$('.view').forEach(v => v.classList.remove('active'));
       $('#view-' + b.dataset.view).classList.add('active');
       if (b.dataset.view === 'report') renderReport();
     };

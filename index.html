@@ -157,6 +157,14 @@ button,input,select{font-family:inherit;font-size:inherit;outline:none}
   margin:6px 0 10px;padding:14px;border-radius:12px;
   background:var(--brand-soft);border:1px solid #dfe3ff;
 }
+/* 识别不可用时，录音跟读升级为主操作区 */
+.self-rec-box.primary-box{
+  border:1.5px solid var(--brand);
+  background:var(--brand-soft);
+  box-shadow:0 2px 12px rgba(79,70,229,.10);
+  margin:12px 0 14px;
+}
+.self-rec-box.primary-box .self-rec-head b{font-size:15.5px}
 .self-rec-head{display:flex;flex-direction:column;gap:2px;margin-bottom:4px}
 .self-rec-head b{font-size:14px}
 .self-rec-head .muted{font-size:12.5px}
@@ -414,6 +422,8 @@ button,input,select{font-family:inherit;font-size:inherit;outline:none}
   .env-banner{margin:10px 12px 0;padding:11px 13px;font-size:13px}
   .env-banner span{min-width:0}
   .toast{bottom:calc(76px + env(safe-area-inset-bottom));max-width:88vw;text-align:center}
+  /* 顶栏放不下长徽章，状态说明在引导和提示文字里都有 */
+  .badge{display:none}
 }
 
 @media (max-width:380px){
@@ -838,8 +848,10 @@ button,input,select{font-family:inherit;font-size:inherit;outline:none}
       <div class="controls">
         <button class="btn btn-primary" id="micTestBtn">🎙️ 测试麦克风</button>
         <button class="btn btn-primary" id="diagBtn">🔍 一键自检</button>
+        <button class="btn btn-ghost" id="resetAsrBtn">🔄 恢复自动评分</button>
         <span class="muted" id="micTestResult"></span>
       </div>
+      <p class="muted">「恢复自动评分」：换到 Edge 或 iPhone 的 Safari 之后点它，重新启用开口自动打分。</p>
       <div id="diagResult" class="diag-box"></div>
     </div>
 
@@ -1420,22 +1432,41 @@ if (window.speechSynthesis) speechSynthesis.onvoiceschanged = loadVoices;
 
 function pickVoice(lang) {
   if (!voices.length) loadVoices();
-  const pool = voices.filter(v => v.lang && v.lang.replace('_', '-').toLowerCase().startsWith(lang.toLowerCase().slice(0, 5)));
+  const norm = (v) => (v.lang || '').replace('_', '-').toLowerCase();
+  const want = lang.toLowerCase().slice(0, 2);
+
+  // 安卓很多手机只装了中文语音包，先找精确语种，找不到就退到任何同语种，再退到默认
+  const exact = voices.filter(v => norm(v).startsWith(lang.toLowerCase().slice(0, 5)));
+  const sameLang = voices.filter(v => norm(v).startsWith(want));
+  const pool = exact.length ? exact : sameLang;
   if (!pool.length) return null;
+
   const pref = pool.find(v => /google|samantha|natural|neural|premium/i.test(v.name));
-  return pref || pool[0];
+  // 本地语音比云端语音可靠，离线也能念
+  return pref || pool.find(v => v.localService) || pool[0];
 }
 function speak(text, opts = {}) {
   if (!window.speechSynthesis) { toast('当前浏览器不支持语音朗读'); return; }
-  speechSynthesis.cancel();
+  try { speechSynthesis.cancel(); } catch {}
   const u = new SpeechSynthesisUtterance(text);
   const acc = opts.accent || store.settings.accent;
   u.lang = acc;
   u.rate = opts.rate || store.settings.rate;
   u.pitch = opts.pitch ?? 1;
+
   const v = pickVoice(acc);
   if (v) u.voice = v;
-  speechSynthesis.speak(u);
+
+  u.onerror = (e) => {
+    // 安卓常见：系统只装了中文 TTS，念不了英文，此时静默失败
+    if (e && (e.error === 'language-unavailable' || e.error === 'voice-unavailable')) {
+      toast('系统缺少英文语音包：安卓请在「设置 → 系统 → 语言和输入法 → 文字转语音」里安装英语语音');
+    }
+  };
+
+  // 必须同步调用 speak，放进 setTimeout 会脱离用户手势，iOS/安卓上反而不出声
+  try { speechSynthesis.speak(u); }
+  catch { toast('朗读失败，请检查系统文字转语音(TTS)设置'); }
 }
 
 /* ---------------- 语音识别（免费 ASR） ---------------- */
@@ -1454,6 +1485,58 @@ function ensureRec() {
   }
   rec.lang = store.settings.recLang;
   return rec;
+}
+
+/* 自动评分是否可用：'unknown' 待验证 / true 可用 / false 已确认不可用。
+ * 安卓 Chrome、微信、Firefox 下识别必然失败。确认不可用后自动切到「录音跟读」，
+ * 免得用户对着一个永远不出结果的按钮反复点。 */
+let asrUsable = SR ? 'unknown' : false;
+try {
+  const saved = localStorage.getItem('sf_asr');
+  if (saved === '0') asrUsable = false;
+  else if (saved === '1') asrUsable = true;
+} catch {}
+
+function markAsrBroken() {
+  if (asrUsable === false) return;
+  asrUsable = false;
+  try { localStorage.setItem('sf_asr', '0'); } catch {}
+  applyPracticeMode();
+  toast('自动评分在你的浏览器上用不了，已切换为「录音跟读」：录下声音和原声对比');
+}
+
+function resetAsr() {
+  try { localStorage.removeItem('sf_asr'); } catch {}
+  location.reload();
+}
+
+/* 把「录音对比」顶到主操作位：这是安卓上唯一稳定可用的开口练习路径 */
+function applyPracticeMode() {
+  if (asrUsable !== false) return;
+  const recBtn = $('#recBtn');
+  const box = $('#selfRecBox');
+  if (!recBtn || !box) return;
+
+  recBtn.classList.add('hidden');
+
+  // 挪到主按钮组正下方（两者同属一张卡片，所以判断前一个兄弟节点即可）
+  const mainControls = document.querySelector('#view-repeat .controls');
+  if (mainControls && box.previousElementSibling !== mainControls) {
+    mainControls.parentNode.insertBefore(box, mainControls.nextSibling);
+  }
+  box.classList.add('primary-box');
+
+  const live = $('#liveBox');
+  if (live) live.classList.add('hidden');
+
+  const tip = $('#engineTip');
+  if (tip) {
+    tip.innerHTML = '🎙️ 你的浏览器不支持自动评分（安卓 Chrome 的识别走 Google 服务，国内连不上）。' +
+      '已为你切到 <b>录音跟读</b>：录下自己的声音，和原声反复对比找差距 —— 这是练口语最有效的方式。' +
+      '上面输入框打字也能评分。';
+  }
+  const mi = $('#manualInput');
+  if (mi) mi.placeholder = '把你读的内容打在这里，回车同样评分';
 }
 
 const ERR_MSG = {
@@ -1547,6 +1630,15 @@ async function diagnose() {
   if (SR) {
     out.push(`${ok('processLocally' in (SR.prototype || {}))} 离线识别：${('processLocally' in (SR.prototype || {})) ? '本浏览器支持（可在设置中开启）' : '本浏览器不支持，识别需联网'}`);
   }
+
+  // 英文语音包：安卓常见缺失，缺了「听原声」会静默无声，用户只会觉得"用不了"
+  loadVoices();
+  const enV = voices.filter(v => (v.lang || '').toLowerCase().startsWith('en'));
+  out.push(`${ok(enV.length)} 英文语音包：${enV.length ? enV.length + ' 个可用' : '未安装 →「听原声」会没声音'}`);
+  if (!enV.length) {
+    out.push('   ↳ 安卓修复：设置 → 系统 → 语言和输入法 → 文字转语音(TTS) → 安装英语语音');
+  }
+  out.push(`${ok(asrUsable !== false)} 自动评分模式：${asrUsable === false ? '已关闭（当前用录音跟读）' : asrUsable === true ? '正常' : '尚未验证'}`);
 
   const probe = async (url, name) => {
     try {
@@ -1779,11 +1871,23 @@ function startRepeatRec() {
   let got = false;
   listen({
     onInterim: (t) => { if (t) live.textContent = t; },
-    onFinal: (text, dur) => { got = true; reset(); gradeRepeat(text, dur); },
-    onError: reset,
+    onFinal: (text, dur) => {
+      got = true; reset();
+      if (asrUsable !== false) { asrUsable = true; try { localStorage.setItem('sf_asr', '1'); } catch {} }
+      gradeRepeat(text, dur);
+    },
+    onError: (code) => {
+      reset();
+      // network / service-not-allowed = 识别服务根本连不上，换浏览器才有救
+      // timeout 只在从没成功过时降级，避免"只是这次没说话"被误判
+      if (asrUsable !== true &&
+          (code === 'network' || code === 'service-not-allowed' || code === 'timeout')) {
+        markAsrBroken();
+      }
+    },
     onEnd: (had) => {
       reset();
-      if (!got && !had) {
+      if (!got && !had && asrUsable !== false) {
         live.textContent = '没有听到内容。若反复失败：① 改用 Edge 浏览器 ② 点上方「听原声」确认喇叭正常 ③ 用下方输入框打字评分';
       }
     },
@@ -2083,6 +2187,20 @@ function bindSettings() {
     el.textContent = '检测中…';
     const lines = await diagnose();
     el.innerHTML = lines.map(l => l ? `<div class="diag-line">${l}</div>` : '<div style="height:6px"></div>').join('');
+
+    // 加个复制按钮：手机上一长串结果没法手抄，方便直接把结果发给别人排查
+    const copy = document.createElement('button');
+    copy.className = 'btn btn-ghost';
+    copy.textContent = '📋 复制检测结果';
+    copy.style.marginTop = '10px';
+    copy.onclick = () => {
+      const text = lines.filter(Boolean).join('\n') + '\n浏览器: ' + navigator.userAgent;
+      const done = () => toast('已复制，粘贴给同学帮我排查即可');
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+      } else fallbackCopy(text, done);
+    };
+    el.appendChild(copy);
   };
 
   $('#exportBtn').onclick = () => {
@@ -2233,13 +2351,15 @@ async function envCheck() {
     return;
   }
   if (!SR) {
-    showBanner('🎙️ 当前浏览器不支持语音评分（微信/Firefox 等均无此能力）。<b>不用换浏览器也能练</b>：跟读页有「录音对比」，录下你的声音和原声对比；输入框打字也能评分。iPhone 用 Safari 可直接语音评分。', '#f59e0b');
+    showBanner('🎙️ 当前浏览器不支持自动评分（微信 / Firefox 等均无此能力）。<b>已自动切换为「录音跟读」</b>：' +
+      '录下你的声音，和原声反复对比找差距，任何浏览器都能用；输入框打字也能评分。想自动打分请用 iPhone 的 Safari 或电脑 Edge。', '#f59e0b');
     return;
   }
 
   // 手机端：安卓语音识别依赖 Google 服务，国内基本连不上，提前讲清楚省得干等
-  if (/android/i.test(ua)) {
-    showBanner('📱 安卓手机的语音评分走 <b>Google 服务</b>，国内连不上。<b>推荐用「录音对比」练口语</b>（跟读页，录自己的声音和原声对比，任何浏览器都行）；打字评分也随时可用。iPhone 用 Safari 可直接语音评分。', '#f59e0b');
+  if (/android/i.test(ua) && !isEdge) {
+    showBanner('📱 安卓手机的自动评分走 <b>Google 服务</b>，国内连不上，<b>已自动切换为「录音跟读」</b>：' +
+      '点大按钮录下自己的声音，再放原声对比，这是练口语最有效的方式。想要自动打分，装个 <b>Edge</b> 打开本页即可。', '#f59e0b');
     return;
   }
   if (/iphone|ipad|ipod/i.test(ua) && /Firefox|FxiOS/i.test(ua)) {
@@ -2282,6 +2402,11 @@ function init() {
 
   buildFilters(); loadList(); buildScenes(); buildWords(); bindSettings();
 
+  // 已知/已确认识别不可用时，直接以「录音跟读」作为主路径
+  applyPracticeMode();
+  const resetAsrBtn = $('#resetAsrBtn');
+  if (resetAsrBtn) resetAsrBtn.onclick = resetAsr;
+
   // 跟读控制
   $('#listenBtn').onclick = () => speak(R.list[R.idx].en);
   $('#slowBtn').onclick = () => speak(R.list[R.idx].en, { rate: 0.62 });
@@ -2318,7 +2443,9 @@ function init() {
   const tip = $('#engineTip');
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
                 (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  if (!SR) {
+  if (asrUsable === false) {
+    // applyPracticeMode() 已经写好了对应文案，别覆盖
+  } else if (!SR) {
     tip.textContent = '🎙️ 语音评分在你的浏览器上不可用。推荐：① 用「录音对比」录下自己的声音和原声对比；② 用输入框打字评分。iPhone 用 Safari 打开可直接语音评分。';
   } else if (isIOS) {
     tip.textContent = '✅ iPhone Safari 支持语音评分（走 Apple 语音引擎）。如果没弹麦克风权限，请在 设置→Safari→麦克风 里允许。';

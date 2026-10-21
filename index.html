@@ -2,8 +2,16 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>SpeakFree · 免费 AI 口语教练</title>
+<meta name="description" content="免费英语口语练习：跟读评分、情景对话、发音挑战。手机电脑都能用，录音只存在本机，不上传、不收费。" />
+<meta name="theme-color" content="#4f46e5" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="SpeakFree" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" type="image/png" href="favicon.png" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
 <style>
 /* ============ SpeakFree · 浅色主题 ============ */
 :root{
@@ -421,6 +429,92 @@ button,input,select{font-family:inherit;font-size:inherit;outline:none}
   .btn{touch-action:manipulation}
 }
 
+/* ---- 分享按钮（顶栏） ---- */
+.top-share{
+  background:var(--brand);color:#fff;border:none;border-radius:10px;
+  padding:8px 14px;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap;
+}
+.top-share:active{opacity:.85}
+
+/* ---- 微信 / QQ 内置浏览器遮罩 ---- */
+.wx-mask{
+  position:fixed;inset:0;z-index:1200;background:rgba(15,20,40,.72);
+  display:flex;align-items:center;justify-content:center;padding:20px;
+}
+.wx-card{
+  background:#fff;border-radius:18px;padding:26px 24px;max-width:420px;width:100%;
+  box-shadow:0 12px 40px rgba(0,0,0,.25);position:relative;
+}
+.wx-card h2{font-size:19px;margin:0 0 8px}
+.wx-card p{font-size:14px;color:var(--ink-2);margin:0 0 12px}
+.wx-corner{
+  position:absolute;top:12px;right:16px;font-size:26px;color:var(--brand);
+  animation:wxpoint 1.2s ease-in-out infinite;
+}
+@keyframes wxpoint{0%,100%{transform:translate(0,0)}50%{transform:translate(3px,-4px)}}
+.wx-steps{margin:0 0 16px;padding-left:20px;font-size:14px;color:var(--ink)}
+.wx-steps li{margin:7px 0}
+.wx-card .btn{width:100%}
+#wxTip{margin:10px 0 0;font-size:12px;word-break:break-all}
+
+/* ---- 首次引导弹窗 ---- */
+.modal{
+  position:fixed;inset:0;z-index:1100;background:rgba(15,20,40,.55);
+  display:flex;align-items:center;justify-content:center;padding:18px;
+}
+.modal-card{
+  background:#fff;border-radius:20px;padding:24px;max-width:460px;width:100%;
+  box-shadow:0 12px 40px rgba(0,0,0,.22);max-height:92vh;overflow:auto;
+}
+.ob-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.ob-head h2{margin:0;font-size:19px}
+.ob-head p{margin:2px 0 0}
+.ob-logo{
+  width:44px;height:44px;border-radius:12px;background:var(--brand);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;flex:none;
+}
+.ob-ask{font-size:14.5px;font-weight:600;margin:0 0 12px}
+.ob-devs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.ob-dev{
+  border:1.5px solid var(--line);border-radius:14px;background:#fff;padding:14px 8px;
+  cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;
+  font-size:13.5px;color:var(--ink);transition:.15s;
+}
+.ob-dev small{color:var(--ink-3);font-size:11.5px}
+.ob-dev .ob-ico{font-size:24px}
+.ob-dev:hover{border-color:var(--brand)}
+.ob-dev.active{border-color:var(--brand);background:var(--brand-soft)}
+.ob-detail{
+  margin-top:14px;background:var(--brand-soft);border-radius:12px;padding:14px 16px;
+}
+.ob-detail b{display:block;margin-bottom:6px;color:var(--brand)}
+.ob-detail ul{margin:0;padding-left:18px;font-size:13.5px;color:var(--ink-2)}
+.ob-detail li{margin:6px 0}
+.ob-actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.ob-actions .btn{flex:1;min-width:150px}
+.center{text-align:center;margin-top:10px}
+
+/* ---- 使用帮助三栏 ---- */
+.help-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:12px 0 14px}
+.help-col{
+  background:#f8f9fd;border:1px solid var(--line);border-radius:12px;padding:12px 14px;
+}
+.help-head{font-weight:700;font-size:14px;margin-bottom:8px}
+.help-col ul{margin:0;padding-left:16px;font-size:12.5px;color:var(--ink-2)}
+.help-col li{margin:5px 0}
+.help-col li.ok{color:var(--ok);font-weight:600;list-style:none;margin-left:-16px}
+.help-col li.ok::before{content:"✓ "}
+
+@media (max-width:640px){
+  .top-share{padding:7px 11px;font-size:12.5px}
+  .ob-devs{grid-template-columns:repeat(3,1fr);gap:8px}
+  .ob-dev{padding:11px 4px;font-size:12.5px}
+  .ob-dev small{display:none}
+  .help-grid{grid-template-columns:1fr;gap:8px}
+  .modal-card{padding:20px 16px}
+  .ob-actions .btn{min-width:100%}
+}
+
 </style>
 </head>
 <body>
@@ -441,9 +535,50 @@ button,input,select{font-family:inherit;font-size:inherit;outline:none}
     <button class="tab" data-view="settings">设置</button>
   </nav>
   <div class="top-right">
+    <button class="top-share" id="topShare" title="分享给同学">📤 分享</button>
     <span id="engineBadge" class="badge">检测中…</span>
   </div>
 </header>
+
+<!-- 微信/QQ 内置浏览器：硬件上不支持麦克风，必须引导出去 -->
+<div id="wechatMask" class="wx-mask hidden">
+  <div class="wx-card">
+    <div class="wx-corner">↗</div>
+    <h2>请在浏览器中打开</h2>
+    <p>微信 / QQ 的内置浏览器不支持麦克风，<b>在这里打不开口语练习</b>。两步就能换过去：</p>
+    <ol class="wx-steps">
+      <li>点右上角 <b>···</b>（iPhone 点右上角 <b>⋯</b> 或右下角 <b>…</b>）</li>
+      <li>选择 <b>「在浏览器打开」</b>，iPhone 选 <b>「在 Safari 中打开」</b></li>
+    </ol>
+    <button class="btn btn-primary" id="wxCopy">📋 复制网址，粘到浏览器里</button>
+    <p class="muted" id="wxTip">复制后打开 Safari 或 Edge，粘贴到地址栏即可</p>
+  </div>
+</div>
+
+<!-- 首次访问：按设备给出最省事的用法 -->
+<div id="onboard" class="modal hidden">
+  <div class="modal-card">
+    <div class="ob-head">
+      <div class="ob-logo">SF</div>
+      <div>
+        <h2>SpeakFree</h2>
+        <p class="muted">免费英语口语教练 · 录音只存在你自己的手机里</p>
+      </div>
+    </div>
+    <p class="ob-ask">你用什么设备打开？选一下，我直接告诉你最省事的用法</p>
+    <div class="ob-devs">
+      <button class="ob-dev" data-dev="ios"><span class="ob-ico">🍎</span><b>iPhone / iPad</b><small>用 Safari 打开</small></button>
+      <button class="ob-dev" data-dev="android"><span class="ob-ico">🤖</span><b>安卓手机</b><small>用 Edge 打开</small></button>
+      <button class="ob-dev" data-dev="pc"><span class="ob-ico">💻</span><b>电脑</b><small>用 Edge 打开</small></button>
+    </div>
+    <div id="obDetail" class="ob-detail hidden"></div>
+    <div class="ob-actions">
+      <button class="btn btn-primary" id="obStart">直接开始练习 →</button>
+      <button class="btn btn-ghost" id="obInstall">📲 添加到主屏幕</button>
+    </div>
+    <p class="muted center" id="obTip">关闭后随时可在「设置」→「使用帮助」里再看一遍</p>
+  </div>
+</div>
 
 <div id="envBanner" class="env-banner hidden">
   <span id="envBannerText"></span>
@@ -718,17 +853,55 @@ button,input,select{font-family:inherit;font-size:inherit;outline:none}
     </div>
 
     <div class="card">
+      <h3>使用帮助 · 转发给同学前先看这个</h3>
+      <div class="help-grid">
+        <div class="help-col">
+          <div class="help-head">🍎 iPhone / iPad</div>
+          <ul>
+            <li>必须用 <b>Safari</b> 打开</li>
+            <li>微信里收到链接 → 右上角 ··· → 在 Safari 中打开</li>
+            <li>首次弹窗点「允许」麦克风</li>
+            <li class="ok">语音评分可直接用</li>
+          </ul>
+        </div>
+        <div class="help-col">
+          <div class="help-head">🤖 安卓手机</div>
+          <ul>
+            <li>想自动评分：装 <b>Edge</b> 打开</li>
+            <li>用 Chrome / 自带浏览器：<b>录音对比</b>照样练</li>
+            <li>微信里收到链接 → 右上角 ··· → 用浏览器打开</li>
+            <li class="ok">两种玩法都能记录成绩</li>
+          </ul>
+        </div>
+        <div class="help-col">
+          <div class="help-head">💻 电脑</div>
+          <ul>
+            <li>推荐 <b>Edge</b>，别用 Chrome</li>
+            <li>不要双击 HTML 文件（那样没麦克风）</li>
+            <li>地址栏点权限图标 → 允许麦克风</li>
+            <li class="ok">语音评分可直接用</li>
+          </ul>
+        </div>
+      </div>
+      <div class="controls">
+        <button class="btn btn-primary" id="copyLinkBtn">📋 复制网址</button>
+        <button class="btn btn-primary" id="shareLinkBtn">📤 分享给同学</button>
+        <button class="btn btn-ghost" id="installBtn">📲 添加到主屏幕</button>
+        <span class="muted" id="copyTip"></span>
+      </div>
+    </div>
+
+    <div class="card">
       <h3>关于</h3>
       <ul class="about-list">
         <li><b>完全免费</b>：语音识别用浏览器自带的 Web Speech API，语音合成用系统内置 TTS，不调用任何付费服务。</li>
         <li><b>数据本地</b>：练习记录保存在浏览器 localStorage，不上传服务器，可随时导出。</li>
-        <li><b>最佳体验</b>：请用 Chrome 或 Edge 打开；Safari / Firefox 的语音识别支持不完整。</li>
-        <li><b>需要联网</b>：Chrome 的语音识别会走系统语音服务，首次使用请允许麦克风权限。</li>
-        <li><b>推荐 Edge</b>：微软语音服务在国内可达，Chrome 走 Google 服务常被墙。</li>
+        <li><b>安卓请用 Edge</b>：Chrome 的语音识别走 Google 服务，国内连不上；Edge 走微软服务可用。</li>
+        <li><b>iPhone 请用 Safari</b>：识别走 Apple 引擎，国内可用；微信和 Firefox 里不行。</li>
+        <li><b>都不行时</b>：用「录音对比」录下自己的声音和原声对照，任何浏览器都支持。</li>
       </ul>
       <div class="controls">
-        <button class="btn btn-primary" id="copyLinkBtn">📋 复制本页网址，发给朋友</button>
-        <span class="muted" id="copyTip"></span>
+        <button class="btn btn-ghost" id="reopenGuide">❓ 重新看一遍上手引导</button>
       </div>
     </div>
   </section>
@@ -1944,6 +2117,96 @@ function fallbackCopy(text, done) {
   document.body.removeChild(ta);
 }
 
+const SHARE_TEXT = 'SpeakFree —— 免费英语口语教练，跟读自动打分，录音只存在你自己手机里。';
+
+function shareApp() {
+  const payload = { title: 'SpeakFree · 免费口语教练', text: SHARE_TEXT, url: location.href };
+  if (navigator.share) {
+    navigator.share(payload).catch(() => {});
+    return;
+  }
+  copyLink();
+}
+
+let deferredPrompt = null;
+if (typeof window.addEventListener === 'function') {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+  });
+}
+
+function installApp() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
+    return;
+  }
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  toast(isIOS
+    ? 'iPhone：点底部「分享」按钮 → 添加到主屏幕'
+    : '点浏览器右上角菜单 → 添加到主屏幕 / 安装应用');
+}
+
+/* 微信 / QQ / 微博 内置浏览器一律不支持麦克风，只能先把人引导出去 */
+function inAppBrowser() {
+  const ua = navigator.userAgent;
+  return /micromessenger/i.test(ua) || /\bQQ\//i.test(ua) || /Weibo/i.test(ua);
+}
+function wechatGuard() {
+  if (!inAppBrowser()) return false;
+  $('#wechatMask').classList.remove('hidden');
+  return true;
+}
+
+const DEV_GUIDE = {
+  ios: {
+    title: 'iPhone / iPad',
+    lines: [
+      '必须用 <b>Safari</b> 打开（微信 / QQ 里收到链接，点右上角 →「在 Safari 中打开」）',
+      '第一次点麦克风时，弹窗选 <b>允许</b>',
+      '可以直接开口说话自动评分；也可以用「录音对比」听自己的声音',
+    ],
+  },
+  android: {
+    title: '安卓手机',
+    lines: [
+      '想自动评分：到应用商店装个 <b>Edge</b>，用 Edge 打开本页',
+      '就用 Chrome / 自带浏览器也完全可以：<b>录音对比</b>照样能练，打字也能评分',
+      '微信里收到链接：右上角 <b>···</b> →「用浏览器打开」',
+      '首次录音请允许麦克风权限',
+    ],
+  },
+  pc: {
+    title: '电脑',
+    lines: [
+      '推荐用 <b>Edge</b> 打开：Chrome 的语音识别走 Google 服务，国内连不上',
+      '不要直接双击 HTML 文件打开，那样浏览器会禁用麦克风',
+      '地址栏右侧点权限图标 → 允许麦克风',
+    ],
+  },
+};
+
+function openOnboard() {
+  $('#onboard').classList.remove('hidden');
+  const ua = navigator.userAgent;
+  const guess = /iPhone|iPad|iPod/.test(ua) ? 'ios'
+    : /Android/.test(ua) ? 'android' : 'pc';
+  renderOnboard(guess);
+}
+function renderOnboard(dev) {
+  const box = $('#obDetail');
+  const g = DEV_GUIDE[dev];
+  if (!g) { box.classList.add('hidden'); return; }
+  $$('.ob-dev').forEach(x => x.classList.toggle('active', x.dataset.dev === dev));
+  box.innerHTML = '<b>' + g.title + '</b><ul>' + g.lines.map(l => '<li>' + l + '</li>').join('') + '</ul>';
+  box.classList.remove('hidden');
+}
+function closeOnboard() {
+  $('#onboard').classList.add('hidden');
+  localStorage.setItem('sf_onboarded', '1');
+}
+
 function showBanner(msg, color) {
   if (sessionStorage.getItem('sf_banner_closed')) return;
   const b = $('#envBanner');
@@ -2003,7 +2266,7 @@ function init() {
     badge.textContent = '✓ 语音引擎就绪';
     badge.classList.add('good');
   } else {
-    badge.textContent = '⚠ 请用 Chrome / Edge 打开';
+    badge.textContent = '⚠ 请用 Edge / Safari 打开';
   }
 
   // Tab 切换
@@ -2143,12 +2406,33 @@ function init() {
 
   // 分享与环境引导
   $('#copyLinkBtn').onclick = copyLink;
+  $('#shareLinkBtn').onclick = shareApp;
+  $('#topShare').onclick = shareApp;
+  $('#installBtn').onclick = installApp;
+  $('#obInstall').onclick = installApp;
+  $('#reopenGuide').onclick = openOnboard;
+  $('#obStart').onclick = closeOnboard;
   $('#bannerCopy').onclick = copyLink;
+
+  $$('.ob-dev').forEach(b => { b.onclick = () => renderOnboard(b.dataset.dev); });
+  $('#onboard').onclick = e => { if (e.target.id === 'onboard') closeOnboard(); };
+
+  $('#wxCopy').onclick = () => {
+    copyLink();
+    $('#wxTip').textContent = '已复制，去浏览器地址栏粘贴打开：' + location.href;
+  };
+
   $('#bannerClose').onclick = () => {
     $('#envBanner').classList.add('hidden');
     sessionStorage.setItem('sf_banner_closed', '1');
   };
-  envCheck();
+
+  // 微信里打开就先挡住，不然后面所有功能都是坏的
+  const guarded = wechatGuard();
+  if (!guarded) {
+    envCheck();
+    if (!localStorage.getItem('sf_onboarded')) openOnboard();
+  }
 }
 
 document.addEventListener('DOMContentLoaded', init);

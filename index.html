@@ -168,6 +168,25 @@ button,input,select{font-family:inherit;font-size:inherit;outline:none}
 .self-rec-head{display:flex;flex-direction:column;gap:2px;margin-bottom:4px}
 .self-rec-head b{font-size:14px}
 .self-rec-head .muted{font-size:12.5px}
+
+/* ---- 本机识别引擎（Whisper）卡片 ---- */
+.whisper-box{
+  margin:8px 0 12px;padding:14px;border-radius:12px;
+  background:#eef7ff;border:1.5px solid #bcd9f7;
+  box-shadow:0 2px 12px rgba(37,99,235,.08);
+}
+.whisper-head{display:flex;flex-direction:column;gap:2px;margin-bottom:6px}
+.whisper-head b{font-size:14.5px;color:#0b5aa8}
+.whisper-head .muted{font-size:12.5px}
+.progress-wrap{margin:6px 0 0}
+.progress{
+  height:8px;border-radius:6px;background:#d7e7f8;overflow:hidden;margin-bottom:6px;
+}
+.progress i{
+  display:block;height:100%;width:0%;border-radius:6px;
+  background:linear-gradient(90deg,#2563eb,#4f46e5);transition:width .3s ease;
+}
+.progress-wrap .muted{font-size:12.5px}
 .self-play-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
 .self-play-label{font-size:12.5px;color:var(--ink-2);font-weight:600}
 .self-rate-label{align-self:center}
@@ -639,6 +658,21 @@ button,input,select{font-family:inherit;font-size:inherit;outline:none}
         <span class="live-text" id="liveText">点击「开始跟读」后，请对着麦克风朗读句子</span>
       </div>
 
+      <div class="whisper-box hidden" id="whisperBox">
+        <div class="whisper-head">
+          <b id="whisperTitle">🧠 本机识别</b>
+          <span class="muted" id="whisperDesc">在你的手机里识别，不联网、不上传任何音频</span>
+        </div>
+        <div class="progress-wrap" id="whisperProgressWrap">
+          <div class="progress"><i id="whisperProgressBar"></i></div>
+          <span class="muted" id="whisperProgressText">准备中…</span>
+        </div>
+        <div class="controls" style="margin:10px 0 0">
+          <button class="btn btn-primary" id="whisperDownloadBtn">⬇️ 下载识别模型（41MB，建议连 WiFi）</button>
+          <button class="btn btn-ghost" id="whisperSkipBtn">先用录音对比</button>
+        </div>
+      </div>
+
       <div class="manual-row">
         <input type="text" id="manualInput" placeholder="麦克风识别不了？把你读了的内容打在这里，回车同样评分" />
         <button class="btn btn-ghost" id="manualBtn">⌨️ 手动评分</button>
@@ -778,6 +812,7 @@ button,input,select{font-family:inherit;font-size:inherit;outline:none}
         <button class="btn btn-primary" id="wordListen">🔊 听发音</button>
         <button class="btn btn-rec" id="wordRec">🎤 跟读评分</button>
         <button class="btn btn-ghost" id="wordMaster">✅ 标记已掌握</button>
+        <span class="muted" id="wordStatus"></span>
       </div>
       <div class="tips-box"><div class="diff-label">发音要点</div><ul id="wordTips"></ul></div>
       <div id="wordResult" class="result-panel hidden">
@@ -845,13 +880,23 @@ button,input,select{font-family:inherit;font-size:inherit;outline:none}
           优先用本机识别、不走网络（Chrome 130+ 且已装英文语言包才有效）
         </label>
       </div>
+      <div class="setting-row">
+        <label>评分引擎</label>
+        <select id="engineSel">
+          <option value="auto">自动（推荐）</option>
+          <option value="whisper">本机识别（全平台通用，需 41MB 模型）</option>
+          <option value="native">浏览器识别（快，但国内安卓不可用）</option>
+        </select>
+      </div>
       <div class="controls">
         <button class="btn btn-primary" id="micTestBtn">🎙️ 测试麦克风</button>
         <button class="btn btn-primary" id="diagBtn">🔍 一键自检</button>
+        <button class="btn btn-ghost" id="whisperLoadBtn">🧠 准备本机识别</button>
         <button class="btn btn-ghost" id="resetAsrBtn">🔄 恢复自动评分</button>
         <span class="muted" id="micTestResult"></span>
       </div>
-      <p class="muted">「恢复自动评分」：换到 Edge 或 iPhone 的 Safari 之后点它，重新启用开口自动打分。</p>
+      <p class="muted">「本机识别」把语音识别模型跑在你的手机/电脑里，<b>不上传任何音频、不需要联网也能识别</b>，安卓 iPhone 电脑表现一致。首次需下载 41MB 模型，之后永久缓存。</p>
+      <p class="muted">「恢复自动评分」：换到 Edge 或 iPhone 的 Safari 之后点它，重新启用浏览器自带的识别。</p>
       <div id="diagResult" class="diag-box"></div>
     </div>
 
@@ -879,10 +924,10 @@ button,input,select{font-family:inherit;font-size:inherit;outline:none}
         <div class="help-col">
           <div class="help-head">🤖 安卓手机</div>
           <ul>
-            <li>想自动评分：装 <b>Edge</b> 打开</li>
-            <li>用 Chrome / 自带浏览器：<b>录音对比</b>照样练</li>
+            <li>打开后会提示下载一次 <b>41MB 识别模型</b>（建议 WiFi）</li>
+            <li>之后点「🎤 录音评分」就能自动打分</li>
+            <li class="ok">用你自己的 CPU 识别，不联网也行</li>
             <li>微信里收到链接 → 右上角 ··· → 用浏览器打开</li>
-            <li class="ok">两种玩法都能记录成绩</li>
           </ul>
         </div>
         <div class="help-col">
@@ -906,11 +951,12 @@ button,input,select{font-family:inherit;font-size:inherit;outline:none}
     <div class="card">
       <h3>关于</h3>
       <ul class="about-list">
-        <li><b>完全免费</b>：语音识别用浏览器自带的 Web Speech API，语音合成用系统内置 TTS，不调用任何付费服务。</li>
+        <li><b>完全免费</b>：默认用浏览器自带的语音识别；不可用时自动切换为跑在你设备里的 Whisper 模型 —— 全程零服务器、零费用。</li>
         <li><b>数据本地</b>：练习记录保存在浏览器 localStorage，不上传服务器，可随时导出。</li>
-        <li><b>安卓请用 Edge</b>：Chrome 的语音识别走 Google 服务，国内连不上；Edge 走微软服务可用。</li>
+        <li><b>隐私</b>：本机识别模式下，音频从头到尾没离开过你的手机，连识别都不联网。</li>
+        <li><b>安卓</b>：浏览器自带的识别走 Google 服务，国内连不上 —— 本页会自动改用「本机识别」，首次下载 41MB 模型后永久离线可用。</li>
         <li><b>iPhone 请用 Safari</b>：识别走 Apple 引擎，国内可用；微信和 Firefox 里不行。</li>
-        <li><b>都不行时</b>：用「录音对比」录下自己的声音和原声对照，任何浏览器都支持。</li>
+        <li><b>都不行时</b>：输入框打字同样评分，「录音对比」也能练。</li>
       </ul>
       <div class="controls">
         <button class="btn btn-ghost" id="reopenGuide">❓ 重新看一遍上手引导</button>
@@ -1269,6 +1315,205 @@ const POLISH_RULES = [
 </script>
 <script>
 /* ============================================================
+ * SpeakFree · 浏览器本地语音识别（Whisper tiny.en / ONNX Runtime）
+ * 不调用任何外部服务：模型与运行时全部从本站加载，
+ * 因此安卓 Chrome、iPhone、电脑表现完全一致。
+ * ============================================================ */
+(function () {
+  'use strict';
+
+  var MODEL_ID = 'whisper-tiny.en';
+  var RUNTIME = 'vendor/transformers.min.js';
+  var MODEL_DIR = 'models/';
+
+  var pipePromise = null;   // 模型加载 Promise
+  var runtimePromise = null; // 运行时加载 Promise
+  var ready = false;
+
+  /** 站点根路径（页面可能与 index.html 不在同一目录，用 location 推导） */
+  function base() {
+    return new URL('./', location.href).href;
+  }
+  /** 允许用 ?modelbase=https://xxx/ 覆盖模型来源（国内加速用） */
+  function modelBase() {
+    var q = '';
+    try { q = new URLSearchParams(location.search).get('modelbase') || ''; } catch (e) {}
+    try { return q ? new URL(q).href : localStorage.getItem('sf_model_base') || (base() + MODEL_DIR); }
+    catch (e) { return base() + MODEL_DIR; }
+  }
+
+  function loadRuntime() {
+    if (runtimePromise) return runtimePromise;
+    runtimePromise = new Promise(function (res, rej) {
+      if (window.transformers) return res(window.transformers);
+      var url = base() + RUNTIME;
+      import(/* webpackIgnore: true */ url).then(function (mod) {
+        // ESM 命名空间：既有 default 也有具名导出
+        var t = (mod && (mod.default || mod)) || window.transformers;
+        if (!t || !t.pipeline) throw new Error('识别引擎格式异常');
+        window.transformers = t;
+        res(t);
+      }).catch(function (e) {
+        runtimePromise = null;
+        rej(new Error('识别引擎加载失败（' + (e && e.message || '网络') + '）'));
+      });
+    });
+    return runtimePromise;
+  }
+
+  function configure(t) {
+    t.env.allowLocalModels = true;
+    t.env.allowRemoteModels = false;
+    t.env.localModelPath = modelBase();
+    t.env.backends.onnx.wasm.wasmPaths = base() + 'vendor/';
+    // GitHub Pages 无法提供 COOP/COEP，多线程会失败，固定单线程最稳
+    try { t.env.backends.onnx.wasm.numThreads = 1; } catch (e) {}
+    try { t.env.backends.onnx.wasm.proxy = false; } catch (e) {}
+  }
+
+  /**
+   * 预加载模型。onProgress(progress 0~100, tip)
+   * 模型约 41MB，首次需要下载；之后浏览器会缓存。
+   */
+  function loadModel(onProgress) {
+    if (pipePromise) return pipePromise;
+    pipePromise = loadRuntime().then(function (t) {
+      configure(t);
+      var seen = {};
+      var last = 0;
+      return t.pipeline('automatic-speech-recognition', MODEL_ID, {
+        progress_callback: function (p) {
+          if (!onProgress || !p || !p.file) return;
+          var f = String(p.file).split('/').pop();
+          if (p.status === 'progress' && typeof p.progress === 'number') {
+            seen[f] = p.progress;
+            // 多文件整体进度：取平均值
+            var sum = 0, n = 0;
+            for (var k in seen) { sum += seen[k]; n++; }
+            var v = Math.round(sum / Math.max(n, 1));
+            if (v !== last) { last = v; onProgress(v, '正在下载识别模型 ' + v + '%'); }
+          } else if (p.status === 'done') {
+            seen[f] = 100;
+          } else if (p.status === 'initiate') {
+            onProgress && onProgress(last, '准备下载识别模型…');
+          }
+        },
+      });
+    }).then(function (pipe) {
+      ready = true;
+      return pipe;
+    }).catch(function (e) {
+      pipePromise = null;
+      throw e;
+    });
+    return pipePromise;
+  }
+
+  /** Blob → 16kHz 单声道 Float32Array */
+  function decodeTo16k(blob) {
+    return blob.arrayBuffer().then(function (ab) {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) throw new Error('当前浏览器不支持音频解码');
+      var ctx = new AC();
+      var p = ctx.decodeAudioData(ab);
+      return p.then(function (buf) {
+        try { ctx.close(); } catch (e) {}
+        return resample(buf, 16000);
+      }, function () {
+        try { ctx.close(); } catch (e) {}
+        throw new Error('录音无法解码，请重录一次');
+      });
+    });
+  }
+
+  function resample(buf, target) {
+    var ch0 = buf.getChannelData(0);
+    if (buf.sampleRate === target && buf.numberOfChannels === 1) return ch0;
+    var ch1 = buf.numberOfChannels > 1 ? buf.getChannelData(1) : null;
+    var ratio = buf.sampleRate / target;
+    var len = Math.max(1, Math.floor(buf.length / ratio));
+    var out = new Float32Array(len);
+    for (var i = 0; i < len; i++) {
+      var s = Math.floor(i * ratio);
+      var e = Math.min(buf.length, Math.floor((i + 1) * ratio));
+      var sum = 0, n = 0;
+      for (var j = s; j < e; j++) {
+        var v = ch0[j];
+        if (ch1) v = (v + ch1[j]) * 0.5;
+        sum += v; n++;
+      }
+      out[i] = n ? sum / n : 0;
+    }
+    return out;
+  }
+
+  /** 平均能量，用于判断是否真的说了话 */
+  function rms(a) {
+    var s = 0, step = Math.max(1, Math.floor(a.length / 8000));
+    var n = 0;
+    for (var i = 0; i < a.length; i += step) { s += a[i] * a[i]; n++; }
+    return n ? Math.sqrt(s / n) : 0;
+  }
+
+  function cleanText(s) {
+    return String(s || '')
+      .replace(/^[\s"'`\u201c\u201d.!?,-]+/, '')
+      .replace(/[\s"'`\u201c\u201d]+$/, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  /** 常见静音幻觉（Whisper 对空白音频的幻想输出） */
+  var HALLU = /^(you|thank you|thanks for watching|the|a|i|so|okay|ok|uh|um|bye|goodbye|subtitles|please subscribe)[\s.!?]*$/i;
+
+  /**
+   * 识别一段录音。
+   * @param {Blob} blob MediaRecorder 产出的音频
+   * @param {Function} onProgress (pct, tip)
+   * @returns {Promise<string>} 识别到的英文文本
+   */
+  function transcribe(blob, onProgress) {
+    if (!blob || !blob.size) return Promise.reject(new Error('没有录到声音'));
+    return decodeTo16k(blob).then(function (audio) {
+      if (audio.length < 1600) throw new Error('录音太短了，请完整朗读句子');
+      if (rms(audio) < 0.002) throw new Error('几乎没听到声音，请靠近麦克风大声一点');
+      return loadModel(onProgress).then(function (pipe) {
+        onProgress && onProgress(100, '正在识别…');
+        return pipe(audio, {
+          language: 'english',
+          task: 'transcribe',
+          chunk_length_s: 30,
+          return_timestamps: false,
+        });
+      }).then(function (out) {
+        var txt = cleanText(out && out.text);
+        if (!txt || HALLU.test(txt)) {
+          if (rms(audio) < 0.01) throw new Error('没听清，请大声一点再试');
+        }
+        if (!txt) throw new Error('没有识别出内容，请再读一次');
+        return txt;
+      });
+    });
+  }
+
+  function isReady() { return ready; }
+  function supported() {
+    return !!(window.MediaRecorder && (window.AudioContext || window.webkitAudioContext) && navigator.mediaDevices);
+  }
+
+  window.SF_ASR = {
+    load: loadModel,
+    transcribe: transcribe,
+    isReady: isReady,
+    supported: supported,
+    modelSize: '41MB',
+    reset: function () { pipePromise = null; ready = false; },
+  };
+})();
+
+</script>
+<script>
+/* ============================================================
  * SpeakFree · 免费 AI 口语教练
  * 技术栈：Web Speech API（SpeechRecognition + SpeechSynthesis）
  *          零后端、零费用、数据全部存 localStorage
@@ -1497,43 +1742,260 @@ try {
   else if (saved === '1') asrUsable = true;
 } catch {}
 
+/* ============================================================
+ * 评分引擎：native（浏览器自带，快）/ whisper（本机模型，全平台）
+ * 安卓 Chrome 的原生识别走 Google 服务，国内必挂 —— 这类设备默认直接
+ * 走本机 Whisper，识别过程完全在用户设备里完成，不联网、不上传音频。
+ * ============================================================ */
+function getEngine() {
+  try {
+    const v = localStorage.getItem('sf_engine');
+    if (v === 'auto' || v === 'whisper' || v === 'native') return v;
+  } catch {}
+  const ua = navigator.userAgent || '';
+  // 安卓上的非 Edge 浏览器：原生识别基本不可能成功，直接上本机识别
+  if (/android/i.test(ua) && !/edg\//i.test(ua)) return 'whisper';
+  return 'auto';
+}
+function setEngine(v) { try { localStorage.setItem('sf_engine', v); } catch {} }
+
+function whisperOK() { return !!(window.SF_ASR && SF_ASR.supported()); }
+
+/** 本次练习实际走哪条路：native / whisper / typing */
+function routeEngine() {
+  const m = getEngine();
+  if (!whisperOK()) return (SR && asrUsable !== false) ? 'native' : 'typing';
+  if (m === 'whisper') return 'whisper';
+  if (m === 'native') return SR ? 'native' : 'typing';
+  if (!SR) return 'whisper';
+  if (asrUsable === false) return 'whisper';
+  return 'native';
+}
+
+function engineLabel() {
+  const r = routeEngine();
+  return r === 'whisper' ? '本机识别' : r === 'native' ? '浏览器识别' : '仅打字';
+}
+
+/* ---- 本机模型：仅在需要时加载，模型会被浏览器长期缓存 ---- */
+let modelPromise = null, modelReady = false;
+function setWhisperProgress(pct, tip) {
+  const bar = $('#whisperProgressBar'), txt = $('#whisperProgressText'), wrap = $('#whisperProgressWrap');
+  if (wrap) wrap.classList.remove('hidden');
+  if (bar) bar.style.width = clamp(pct, 0, 100) + '%';
+  if (txt) txt.textContent = tip || (pct + '%');
+}
+function ensureWhisper(onProgress) {
+  if (modelReady) return Promise.resolve(true);
+  if (modelPromise) return modelPromise;
+  const done = (pct, tip) => { onProgress && onProgress(pct, tip); setWhisperProgress(pct, tip); };
+  done(1, '正在准备本机识别引擎…');
+  modelPromise = SF_ASR.load((pct, tip) => done(Math.max(2, Math.min(pct, 99)), tip))
+    .then(() => {
+      modelReady = true;
+      try { localStorage.setItem('sf_model_ok', '1'); } catch {}
+      done(100, '本机识别已就绪 ✓');
+      markWhisperReady();
+      return true;
+    })
+    .catch(e => {
+      modelPromise = null;
+      done(0, '准备失败：' + (e && e.message || '网络问题') + '（可重试）');
+      throw e;
+    });
+  return modelPromise;
+}
+function markWhisperReady() {
+  const box = $('#whisperBox');
+  const title = $('#whisperTitle'), desc = $('#whisperDesc');
+  const btn = $('#whisperDownloadBtn'), skip = $('#whisperSkipBtn');
+  if (title) title.textContent = '🧠 本机识别已就绪';
+  if (desc) desc.textContent = '识别在你的手机里完成，不联网、不上传音频，安卓/iPhone/电脑都能用';
+  if (btn) { btn.textContent = '✅ 已就绪，可以直接录音'; btn.classList.remove('btn-primary'); btn.classList.add('btn-ghost'); }
+  if (skip) skip.classList.add('hidden');
+  const t = $('#engineTip');
+  if (t && box) {
+    t.innerHTML = '🧠 已启用 <b>本机识别</b>：录下你的声音后由手机本地识别，<b>不联网、不上传音频</b>，安卓 / iPhone / 电脑都能自动打分。';
+  }
+}
+
+/* ---- 录音 + 本机识别（原生识别不可用时的统一入口） ---- */
+let recMR = null, recChunks = [], recStream = null, recTimer = null, recStart = 0;
+function isLocalRecording() { return !!(recMR && recMR.state === 'recording'); }
+function pickMimeType() {
+  if (!window.MediaRecorder) return '';
+  const list = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4;codecs=mp4a.40.2', 'audio/mp4', 'audio/ogg;codecs=opus'];
+  for (const m of list) { try { if (MediaRecorder.isTypeSupported(m)) return m; } catch {} }
+  return '';
+}
+function stopLocalRec() {
+  if (recMR && recMR.state === 'recording') { try { recMR.stop(); } catch {} }
+}
+function clearLocalRec() {
+  if (recTimer) { clearInterval(recTimer); recTimer = null; }
+  try { recStream && recStream.getTracks().forEach(t => t.stop()); } catch {}
+  recStream = null;
+}
+/**
+ * 录音并在设备本地转写成英文。
+ * @param {Object} o  { live: 显示状态的文本元素, onTick(sec), onText(text, durMs), maxSec }
+ */
+function recordAndTranscribe(o) {
+  const live = o.live;
+  const onTick = o.onTick || (() => {});
+  const maxSec = o.maxSec || 20;
+
+  if (isLocalRecording()) { stopLocalRec(); return; }
+  if (!whisperOK()) { toast('当前浏览器不支持录音'); return; }
+  if (!window.isSecureContext) { toast('需要 https 环境才能用麦克风'); return; }
+
+  navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } })
+    .then(stream => {
+      recStream = stream; recChunks = [];
+      const mt = pickMimeType();
+      recMR = new MediaRecorder(stream, mt ? { mimeType: mt } : undefined);
+      recMR.ondataavailable = e => { if (e.data && e.data.size) recChunks.push(e.data); };
+      recMR.onstop = () => {
+        clearLocalRec();
+        const dur = Date.now() - recStart;
+        const blob = new Blob(recChunks, { type: (recMR && recMR.mimeType) || 'audio/webm' });
+        transcribeWithProgress(blob, dur, o);
+      };
+      recMR.start();
+      recStart = Date.now();
+      let sec = 0;
+      onTick(0);
+      recTimer = setInterval(() => {
+        sec++;
+        onTick(sec);
+        if (sec >= maxSec) stopLocalRec();
+      }, 1000);
+    })
+    .catch(e => {
+      clearLocalRec();
+      onTick(-1);
+      toast(e && e.name === 'NotAllowedError'
+        ? '麦克风权限被拒绝，请在浏览器设置里允许后重试'
+        : '无法访问麦克风，可用下方输入框打字');
+    });
+}
+
+function transcribeWithProgress(blob, dur, o) {
+  const live = o.live;
+  const say = t => { if (live) live.textContent = t; };
+  if (!blob.size) { say('没有录到声音，请再试一次'); return; }
+  showWhisperBox(false);
+  ensureWhisper((pct, tip) => say('🧠 ' + (tip || pct + '%')))
+    .then(() => {
+      say('🧠 本机识别中…');
+      return SF_ASR.transcribe(blob, (pct, tip) => say('🧠 ' + (tip || pct + '%')));
+    })
+    .then(txt => {
+      markWhisperReady();
+      hideWhisperBox();
+      o.onText(txt, dur);
+    })
+    .catch(e => {
+      const msg = (e && e.message) || '识别失败';
+      say('识别失败：' + msg + '（可用下方输入框打字评分）');
+      toast(msg);
+      o.onFail && o.onFail(e);
+    });
+}
+
+let selfBoxAnchor = null;
+function showWhisperBox(withDownloadBtn) {
+  const box = $('#whisperBox');
+  if (!box) return;
+  box.classList.remove('hidden');
+  const wrap = $('#whisperProgressWrap');
+  if (wrap) wrap.classList.toggle('hidden', !!(modelReady || modelPromise));
+  if (modelReady) markWhisperReady();
+}
+function hideWhisperBox() {
+  const box = $('#whisperBox');
+  if (box) box.classList.add('hidden');
+}
+function restoreSelfBox() {
+  const box = $('#selfRecBox');
+  if (!box) return;
+  box.classList.remove('primary-box');
+  if (selfBoxAnchor && box.nextElementSibling !== selfBoxAnchor && selfBoxAnchor.parentNode === box.parentNode) {
+    selfBoxAnchor.parentNode.insertBefore(box, selfBoxAnchor);
+  }
+}
+
 function markAsrBroken() {
   if (asrUsable === false) return;
   asrUsable = false;
   try { localStorage.setItem('sf_asr', '0'); } catch {}
-  applyPracticeMode();
-  toast('自动评分在你的浏览器上用不了，已切换为「录音跟读」：录下声音和原声对比');
+  if (whisperOK()) {
+    setEngine('whisper');
+    applyPracticeMode();
+    toast('你的浏览器连不上谷歌语音服务 —— 已改用「本机识别」，不联网也能打分');
+  } else {
+    applyPracticeMode();
+    toast('自动评分在你的浏览器上用不了，已切换为「录音跟读」：录下声音和原声对比');
+  }
 }
 
 function resetAsr() {
-  try { localStorage.removeItem('sf_asr'); } catch {}
+  try { localStorage.removeItem('sf_asr'); localStorage.setItem('sf_engine', 'auto'); } catch {}
   location.reload();
 }
 
-/* 把「录音对比」顶到主操作位：这是安卓上唯一稳定可用的开口练习路径 */
+/* 主界面随可用引擎自动调整：把能用的那条路放在最显眼的位置 */
 function applyPracticeMode() {
-  if (asrUsable !== false) return;
   const recBtn = $('#recBtn');
   const box = $('#selfRecBox');
-  if (!recBtn || !box) return;
+  if (!recBtn) return;
+  const selfBox = box;
+  if (selfBox && !selfBoxAnchor) selfBoxAnchor = selfBox.nextElementSibling;
 
-  recBtn.classList.add('hidden');
-
-  // 挪到主按钮组正下方（两者同属一张卡片，所以判断前一个兄弟节点即可）
-  const mainControls = document.querySelector('#view-repeat .controls');
-  if (mainControls && box.previousElementSibling !== mainControls) {
-    mainControls.parentNode.insertBefore(box, mainControls.nextSibling);
-  }
-  box.classList.add('primary-box');
-
+  const route = routeEngine();
   const live = $('#liveBox');
+  const tip = $('#engineTip');
+
+  if (route === 'whisper') {
+    recBtn.classList.remove('hidden');
+    recBtn.textContent = '🎤 录音评分';
+    if (live) live.classList.remove('hidden');
+    restoreSelfBox();
+    if (tip) {
+      tip.innerHTML = '🧠 已为本机启用 <b>本机识别</b>：录下你的声音后，识别在你的手机里完成，' +
+        '<b>不联网、不上传任何音频</b>，安卓 / iPhone / 电脑都能自动打分。首次需要下载一次 41MB 模型（之后一直缓存在手机里）。';
+    }
+    showWhisperBox(true);
+    // 之前成功过：静默预载，用户完全无感
+    let ever = false;
+    try { ever = localStorage.getItem('sf_model_ok') === '1'; } catch {}
+    if (ever) ensureWhisper().catch(() => {});
+    return;
+  }
+
+  hideWhisperBox();
+  if (route === 'native') {
+    recBtn.classList.remove('hidden');
+    recBtn.textContent = '🎤 开始跟读';
+    if (live) live.classList.remove('hidden');
+    restoreSelfBox();
+    return;
+  }
+
+  // typing：连本机识别也用不了（微信内置浏览器等），退回「录音对比 + 打字」
+  recBtn.classList.add('hidden');
+  if (selfBox) {
+    const mainControls = document.querySelector('#view-repeat .controls');
+    if (mainControls && selfBox.previousElementSibling !== mainControls) {
+      mainControls.parentNode.insertBefore(selfBox, mainControls.nextSibling);
+    }
+    selfBox.classList.add('primary-box');
+  }
   if (live) live.classList.add('hidden');
 
-  const tip = $('#engineTip');
   if (tip) {
-    tip.innerHTML = '🎙️ 你的浏览器不支持自动评分（安卓 Chrome 的识别走 Google 服务，国内连不上）。' +
-      '已为你切到 <b>录音跟读</b>：录下自己的声音，和原声反复对比找差距 —— 这是练口语最有效的方式。' +
-      '上面输入框打字也能评分。';
+    tip.innerHTML = '🎙️ 当前浏览器连麦克风都不给用（微信内置浏览器等如此）。' +
+      '请点右上角 <b>··· → 用浏览器打开</b>；或者用下面的输入框打字评分。';
   }
   const mi = $('#manualInput');
   if (mi) mi.placeholder = '把你读的内容打在这里，回车同样评分';
@@ -1638,7 +2100,9 @@ async function diagnose() {
   if (!enV.length) {
     out.push('   ↳ 安卓修复：设置 → 系统 → 语言和输入法 → 文字转语音(TTS) → 安装英语语音');
   }
-  out.push(`${ok(asrUsable !== false)} 自动评分模式：${asrUsable === false ? '已关闭（当前用录音跟读）' : asrUsable === true ? '正常' : '尚未验证'}`);
+  out.push(`${ok(asrUsable !== false)} 浏览器自带识别：${asrUsable === false ? '确认不可用' : asrUsable === true ? '正常' : '尚未验证'}`);
+  out.push(`✓ 当前评分引擎：${engineLabel()}`);
+  out.push(`${ok(whisperOK())} 本机识别可用性：${whisperOK() ? (modelReady ? '模型已就绪' : '支持（需下载 41MB 模型）') : '不支持（浏览器缺少 WebAssembly/MediaRecorder）'}`);
 
   const probe = async (url, name) => {
     try {
@@ -1759,7 +2223,9 @@ function renderSentence() {
   $('#targetSent').textContent = s.en;
   $('#targetZh').textContent = s.zh;
   $('#resultPanel').classList.add('hidden');
-  $('#liveText').textContent = '点击「开始跟读」后，请对着麦克风朗读句子';
+  $('#liveText').textContent = routeEngine() === 'whisper'
+    ? '点「录音评分」朗读句子，说完再点一次停止，本机会自动打分'
+    : '点击「开始跟读」后，请对着麦克风朗读句子';
   $('#liveText').classList.remove('listening');
   resetSelfRec();
 }
@@ -1852,9 +2318,55 @@ function gradeRepeat(text, dur) {
 }
 
 function startRepeatRec() {
+  const route = routeEngine();
+  if (route === 'whisper') return startWhisperRepeat();
+  if (route === 'native') return startNativeRepeat();
+  toast('当前环境用不了麦克风，请用下方输入框打字评分');
+}
+
+/* 本机识别：录音 → 本地 Whisper 转写 → 自动评分 */
+function startWhisperRepeat() {
   const btn = $('#recBtn');
   const live = $('#liveText');
   const target = R.list[R.idx].en;
+
+  if (isLocalRecording()) {
+    stopLocalRec();
+    return;
+  }
+
+  btn.classList.add('recording');
+  btn.textContent = '⏹ 停止并评分';
+  live.classList.add('listening');
+  $('#resultPanel').classList.add('hidden');
+
+  recordAndTranscribe({
+    live,
+    maxSec: 20,
+    onTick: (sec) => {
+      if (sec < 0) { btn.classList.remove('recording'); btn.textContent = '🎤 录音评分'; live.classList.remove('listening'); return; }
+      live.textContent = sec === 0
+        ? '🎙️ 正在录音…请朗读句子（说完点「停止并评分」）'
+        : `🎙️ 已录 ${sec} 秒 —— 说完点「停止并评分」`;
+    },
+    onText: (text, dur) => {
+      btn.classList.remove('recording');
+      btn.textContent = '🎤 录音评分';
+      live.classList.remove('listening');
+      gradeRepeat(text, dur);
+    },
+    onFail: () => {
+      btn.classList.remove('recording');
+      btn.textContent = '🎤 录音评分';
+      live.classList.remove('listening');
+    },
+  });
+}
+
+/* 浏览器自带识别：实时出字（安卓基本走不到这里） */
+function startNativeRepeat() {
+  const btn = $('#recBtn');
+  const live = $('#liveText');
   if (recActive) { stopListen(); btn.classList.remove('recording'); btn.textContent = '🎤 开始跟读'; return; }
 
   const reset = () => {
@@ -1878,8 +2390,7 @@ function startRepeatRec() {
     },
     onError: (code) => {
       reset();
-      // network / service-not-allowed = 识别服务根本连不上，换浏览器才有救
-      // timeout 只在从没成功过时降级，避免"只是这次没说话"被误判
+      // network / service-not-allowed / timeout = 识别服务根本连不上 → 自动改走本机识别
       if (asrUsable !== true &&
           (code === 'network' || code === 'service-not-allowed' || code === 'timeout')) {
         markAsrBroken();
@@ -1888,7 +2399,7 @@ function startRepeatRec() {
     onEnd: (had) => {
       reset();
       if (!got && !had && asrUsable !== false) {
-        live.textContent = '没有听到内容。若反复失败：① 改用 Edge 浏览器 ② 点上方「听原声」确认喇叭正常 ③ 用下方输入框打字评分';
+        live.textContent = '没有听到内容。可以直接点「录音评分」用本机识别，或在下方打字评分';
       }
     },
   });
@@ -2172,6 +2683,16 @@ function bindSettings() {
 
   $('#micTestBtn').onclick = () => {
     const el = $('#micTestResult');
+    if (isLocalRecording()) { stopLocalRec(); return; }
+    if (routeEngine() === 'whisper') {
+      recordAndTranscribe({
+        live: el, maxSec: 10,
+        onTick: (sec) => { if (sec >= 0) el.textContent = sec === 0 ? '🎙️ 请说一句英语（说完点按钮停止）' : `🎙️ 录音中 ${sec} 秒`; },
+        onText: (t) => { el.textContent = '✅ 录音 + 本机识别正常，听到：' + t; },
+        onFail: () => { el.textContent = '❌ 本机识别失败'; },
+      });
+      return;
+    }
     el.textContent = '请对着麦克风说一句英语…';
     let got = false;
     listen({
@@ -2351,15 +2872,23 @@ async function envCheck() {
     return;
   }
   if (!SR) {
-    showBanner('🎙️ 当前浏览器不支持自动评分（微信 / Firefox 等均无此能力）。<b>已自动切换为「录音跟读」</b>：' +
-      '录下你的声音，和原声反复对比找差距，任何浏览器都能用；输入框打字也能评分。想自动打分请用 iPhone 的 Safari 或电脑 Edge。', '#f59e0b');
-    return;
+    showBanner(whisperOK()
+      ? '🧠 这个浏览器没有自带识别，<b>已自动切换为「本机识别」</b>：录下你的声音后在你的手机里识别，不联网、不上传音频，安卓 / iPhone / 电脑都一样能自动打分。首次需下载一次 41MB 模型，之后一直缓存。'
+      : '🎙️ 当前浏览器不支持自动评分（微信 / Firefox 等均无此能力）。<b>已自动切换为「录音跟读」</b>：' +
+        '录下你的声音，和原声反复对比找差距，任何浏览器都能用；输入框打字也能评分。', '#f59e0b');
+    if (!whisperOK()) return;
   }
 
-  // 手机端：安卓语音识别依赖 Google 服务，国内基本连不上，提前讲清楚省得干等
+  // 手机端：安卓语音识别依赖 Google 服务，国内基本连不上 —— 一律走本机识别，提前说清楚
   if (/android/i.test(ua) && !isEdge) {
-    showBanner('📱 安卓手机的自动评分走 <b>Google 服务</b>，国内连不上，<b>已自动切换为「录音跟读」</b>：' +
-      '点大按钮录下自己的声音，再放原声对比，这是练口语最有效的方式。想要自动打分，装个 <b>Edge</b> 打开本页即可。', '#f59e0b');
+    let cached = false;
+    try { cached = localStorage.getItem('sf_model_ok') === '1'; } catch {}
+    showBanner(whisperOK()
+      ? (cached
+        ? '🧠 安卓手机已启用 <b>本机识别</b>：点「🎤 录音评分」录下你的句子，识别在你的手机里完成，不需要联网、音频不上传。'
+        : '🧠 安卓的浏览器识别走 Google 服务（国内连不上），所以本页改用 <b>本机识别</b>：点绿色按钮下载一次 41MB 模型（建议连 WiFi），之后每次打开都能直接录音打分，<b>不需要联网</b>。')
+      : '📱 安卓手机的自动评分走 <b>Google 服务</b>，国内连不上，<b>已自动切换为「录音跟读」</b>：' +
+        '点大按钮录下自己的声音，再放原声对比，这是练口语最有效的方式。', '#f59e0b');
     return;
   }
   if (/iphone|ipad|ipod/i.test(ua) && /Firefox|FxiOS/i.test(ua)) {
@@ -2443,12 +2972,40 @@ function init() {
   const tip = $('#engineTip');
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
                 (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  if (asrUsable === false) {
+  if (!SR) {
+    if (routeEngine() === 'whisper') {
+      tip.innerHTML = '🧠 你的浏览器没有自带识别，已改用 <b>本机识别</b>：录音后在手机本地转写成文字并自动打分，<b>不联网、不上传音频</b>。';
+    } else {
+      tip.textContent = '🎙️ 语音评分在你的浏览器上不可用。推荐：① 用「录音对比」录下自己的声音和原声对比；② 用输入框打字评分。';
+    }
+  } else if (asrUsable === false) {
     // applyPracticeMode() 已经写好了对应文案，别覆盖
-  } else if (!SR) {
-    tip.textContent = '🎙️ 语音评分在你的浏览器上不可用。推荐：① 用「录音对比」录下自己的声音和原声对比；② 用输入框打字评分。iPhone 用 Safari 打开可直接语音评分。';
   } else if (isIOS) {
     tip.textContent = '✅ iPhone Safari 支持语音评分（走 Apple 语音引擎）。如果没弹麦克风权限，请在 设置→Safari→麦克风 里允许。';
+  }
+
+  // 本机识别：模型下载入口
+  const wBtn = $('#whisperDownloadBtn');
+  if (wBtn) {
+    wBtn.onclick = () => {
+      if (modelReady) { toast('本机识别已就绪，点上方大按钮开始录音'); return; }
+      ensureWhisper().then(() => { applyPracticeMode(); toast('本机识别就绪 ✓ 现在点「录音评分」即可'); })
+        .catch(e => toast('准备失败：' + (e && e.message || '请检查网络')));
+    };
+  }
+  const wSkip = $('#whisperSkipBtn');
+  if (wSkip) wSkip.onclick = () => { hideWhisperBox(); toast('已收起：需要时点设置里的「准备本机识别」'); };
+  const wLoad = $('#whisperLoadBtn');
+  if (wLoad) {
+    wLoad.onclick = () => {
+      ensureWhisper().then(() => { applyPracticeMode(); toast('本机识别就绪 ✓'); })
+        .catch(e => toast('准备失败：' + (e && e.message || '请检查网络')));
+    };
+  }
+  const eSel = $('#engineSel');
+  if (eSel) {
+    eSel.value = getEngine();
+    eSel.onchange = () => { setEngine(eSel.value); applyPracticeMode(); toast('已切换评分引擎：' + engineLabel()); };
   }
 
   // 对话控制
@@ -2463,6 +3020,20 @@ function init() {
   $('#userText').onkeydown = e => { if (e.key === 'Enter') $('#sendBtn').click(); };
   $('#chatRecBtn').onclick = () => {
     const btn = $('#chatRecBtn'), live = $('#chatLive');
+    if (isLocalRecording()) { stopLocalRec(); btn.classList.remove('recording'); return; }
+
+    if (routeEngine() === 'whisper') {
+      btn.classList.add('recording');
+      recordAndTranscribe({
+        live,
+        maxSec: 25,
+        onTick: (sec) => { if (sec >= 0) live.textContent = sec === 0 ? '🎙️ 正在录音…说完点「停止」' : `🎙️ 已录 ${sec} 秒 —— 说完点「停止」`; },
+        onText: (t, dur) => { btn.classList.remove('recording'); live.textContent = ''; $('#userText').value = t; answer(t, dur); },
+        onFail: () => { btn.classList.remove('recording'); live.textContent = ''; },
+      });
+      return;
+    }
+
     if (recActive) { stopListen(); btn.classList.remove('recording'); return; }
     btn.classList.add('recording');
     live.textContent = '正在听…';
@@ -2490,6 +3061,27 @@ function init() {
   $('#wordRec').onclick = () => {
     if (!curWord) return;
     const btn = $('#wordRec');
+    if (isLocalRecording()) { stopLocalRec(); return; }
+
+    if (routeEngine() === 'whisper') {
+      btn.classList.add('recording'); btn.textContent = '⏹ 停止';
+      const done = () => { btn.classList.remove('recording'); btn.textContent = '🎤 跟读评分'; };
+      const grade = (t, dur) => {
+        done();
+        const res = evaluate(curWord.w, t, dur);
+        if (!res) { toast('没听清，再试一次'); return; }
+        $('#wordResult').classList.remove('hidden');
+        $('#wordScore').textContent = res.overall;
+        $('#wordDiff').innerHTML = res.marks.map(m => {
+          const label = { ok: '准确', warn: '接近', bad: '有误', miss: '漏读', extra: '多读' }[m.k];
+          return `<div class="word-pill w-${m.k}">${m.k === 'extra' ? m.s : m.t}<small>${m.s && m.k !== 'ok' ? '听到: ' + m.s : label}</small></div>`;
+        }).join('');
+        addRecord('word', curWord.w, t, res);
+      };
+      recordAndTranscribe({ live: $('#wordStatus'), maxSec: 15, onTick: () => {}, onText: grade, onFail: done });
+      return;
+    }
+
     if (recActive) { stopListen(); btn.classList.remove('recording'); return; }
     btn.classList.add('recording'); btn.textContent = '⏹ 停止';
     let got = false;
